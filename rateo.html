@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Rateo Ferie & Turni</title>
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #cbd5e1;
+            --danger: #ef4444;
+            --warning: #d97706;
+            --info: #3b82f6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 15px; max-width: 900px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 20px; }
+        header h1 { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-main); }
+        
+        .card { background: var(--card-bg); border-radius: 8px; padding: 15px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card h2 { font-size: 1.1rem; margin-bottom: 12px; }
+        
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
+        label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted); min-height: 2.4em; }
+        
+        input, select { width: 100%; padding: 10px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff; height: 40px; }
+        input:focus, select:focus { outline: 2px solid var(--primary); }
+        input[readonly] { background-color: #f1f5f9; color: var(--text-muted); font-weight: bold; cursor: not-allowed; }
+
+        .btn { background-color: var(--primary); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; font-size: 0.95rem; margin-top: 5px; }
+        .btn:hover { background-color: var(--primary-dark); }
+        .btn-secondary { background-color: var(--info); }
+        .btn-secondary:hover { background-color: #2563eb; }
+        .btn-outline { background-color: transparent; color: var(--text-main); border: 1px solid var(--border); }
+        .btn-outline:hover { background-color: #f1f5f9; }
+        
+        .feedback-msg { display: none; margin-top: 10px; padding: 8px; background-color: #d1fae5; color: #065f46; border-radius: 6px; text-align: center; font-size: 0.85rem; font-weight: bold; }
+
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: center; min-width: 500px; }
+        th, td { border: 1px solid var(--border); padding: 8px 6px; }
+        th { background-color: #f1f5f9; font-weight: 700; color: var(--text-main); font-size: 0.75rem; text-transform: uppercase; }
+        td.month-name { text-align: left; font-weight: 600; padding-left: 10px; text-transform: capitalize; background-color: #fafafa; }
+        
+        .rateo-val { font-weight: 700; background-color: #f8fafc; color: var(--text-main); }
+
+        .summary-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; }
+        .summary-table { width: 100%; min-width: unset; }
+        .summary-table td { text-align: left; padding: 8px 12px; font-size: 0.85rem; border: none; }
+        .summary-table td:last-child { text-align: right; font-weight: 700; width: 120px; }
+        
+        .highlight-red { color: var(--danger); }
+        .highlight-green { color: var(--primary-dark); }
+        .info-box { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4; }
+
+        .flex-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+        .flex-btns .btn { flex: 1; min-width: 150px; }
+
+        /* Stili per la stampa/PDF */
+        @media print {
+            body { background: white; padding: 0; }
+            .card, header { box-shadow: none; border: none; padding: 0; margin-bottom: 15px; }
+            .no-print { display: none !important; }
+            .table-responsive { overflow: visible; }
+            table { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>RATEO FERIE & TURNI</h1>
+    </header>
+
+    <div class="card no-print" style="border-left: 4px solid var(--primary);">
+        <h2>⚙️ 1. Configurazione Ferie Iniziali</h2>
+        <div class="form-row">
+            <div>
+                <label for="inpFerieIniziali">Ferie Residue Iniziali (Anno Precedente):</label>
+                <input type="number" id="inpFerieIniziali" placeholder="es. 10" step="0.5" value="0" oninput="calcolaTotali()">
+            </div>
+        </div>
+    </div>
+
+    <div class="card no-print">
+        <h2>➕ 2. Registra / Aggiorna Mese</h2>
+        <div class="form-row">
+            <div>
+                <label for="selMese">Seleziona Mese:</label>
+                <select id="selMese" onchange="caricaDatiMeseForm()">
+                    <option value="0">Gennaio</option>
+                    <option value="1">Febbraio</option>
+                    <option value="2">Marzo</option>
+                    <option value="3">Aprile</option>
+                    <option value="4">Maggio</option>
+                    <option value="5">Giugno</option>
+                    <option value="6">Luglio</option>
+                    <option value="7">Agosto</option>
+                    <option value="8">Settembre</option>
+                    <option value="9">Ottobre</option>
+                    <option value="10">Novembre</option>
+                    <option value="11">Dicembre</option>
+                </select>
+            </div>
+            <div>
+                <label for="inpTurniEff">Turni Effettivi:</label>
+                <input type="number" id="inpTurniEff" placeholder="es. 10" oninput="calcolaTurniMeseAuto()">
+            </div>
+            <div>
+                <label for="inpMA">Malattia (MA):</label>
+                <input type="number" id="inpMA" placeholder="0" oninput="calcolaTurniMeseAuto()">
+            </div>
+            <div>
+                <label for="inpFS">Fest. Soppresse:</label>
+                <input type="number" id="inpFS" placeholder="0" oninput="calcolaTurniMeseAuto()">
+            </div>
+            <div>
+                <label for="inpFerieUsate">Ferie Usate:</label>
+                <input type="number" id="inpFerieUsate" placeholder="0" oninput="calcolaTurniMeseAuto()">
+            </div>
+            <div>
+                <label for="inpTurniMese">Totale Turni Mese:</label>
+                <input type="number" id="inpTurniMese" placeholder="0" readonly>
+            </div>
+        </div>
+        
+        <button class="btn" type="button" onclick="salvaMeseCurrent()">💾 Salva Mese</button>
+        <div class="feedback-msg" id="msgOk">✓ Mese salvato con successo nella tabella!</div>
+    </div>
+
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h2>📋 Riepilogo Mese per Mese</h2>
+            <button class="btn btn-secondary no-print" style="width: auto; padding: 6px 12px; margin: 0;" onclick="esportaPDF()">📄 Esporta PDF</button>
+        </div>
+        <div class="info-box no-print">
+            Totale Turni = Turni Effettivi + Malattia + Fest. Soppresse + Ferie Usate.<br>
+            Soglia: 16+ turni totali = 2,166 gg | Sotto i 16 turni = 0,086 gg per turno.
+        </div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 18%;">MESE</th>
+                        <th>TURNI EFFETTIVI</th>
+                        <th>MA</th>
+                        <th>FEST SOPP</th>
+                        <th>FERIE USATE</th>
+                        <th>TOTALE TURNI</th>
+                        <th style="width: 20%;">RATEO MATURATO</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="summary-container">
+        <div class="card">
+            <h2>📊 Totali Ferie</h2>
+            <table class="summary-table">
+                <tr>
+                    <td><strong>Turni Totali Anno</strong></td>
+                    <td id="totTurniAnni">0</td>
+                </tr>
+                <tr>
+                    <td>Ferie residue iniziali</td>
+                    <td id="dispResidueIniziali">0 gg</td>
+                </tr>
+                <tr>
+                    <td>Ferie utilizzate</td>
+                    <td id="totFerieUtilizzate" class="highlight-red">0 gg</td>
+                </tr>
+                <tr>
+                    <td><strong>Ferie disponibili tot</strong></td>
+                    <td id="ferieDisponibiliTot" class="highlight-green">0 gg</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>🎯 Proiezione Rateo</h2>
+            <table class="summary-table">
+                <tr>
+                    <td>Ferie Maturate (Reali / Visive)</td>
+                    <td id="totFerieMaturate">0,000</td>
+                </tr>
+                <tr>
+                    <td>Rateo mancante allo scatto</td>
+                    <td id="rateoMancante">0,000</td>
+                </tr>
+                <tr>
+                    <td><strong>Turni mancanti</strong></td>
+                    <td id="turniMancanti" style="color: var(--warning);">0</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="card no-print">
+        <h2>💾 Backup & Ripristino Dati</h2>
+        <div class="flex-btns">
+            <button class="btn btn-outline" type="button" onclick="esportaDatiJSON()">📥 Salva Backup (JSON)</button>
+            <button class="btn btn-outline" type="button" onclick="document.getElementById('fileImport').click()">📤 Carica Backup (JSON)</button>
+            <input type="file" id="fileImport" accept=".json" style="display: none;" onchange="importaDatiJSON(event)">
+        </div>
+    </div>
+
+    <script>
+        const mesiNomi = [
+            "gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
+            "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"
+        ];
+
+        let datiMesi = mesiNomi.map(m => ({
+            mese: m, turniEffettivi: 0, ma: 0, festSopp: 0, ferieUsate: 0
+        }));
+
+        function calcolaTurniMeseAuto() {
+            const eff = parseFloat(document.getElementById('inpTurniEff').value) || 0;
+            const ma = parseFloat(document.getElementById('inpMA').value) || 0;
+            const fs = parseFloat(document.getElementById('inpFS').value) || 0;
+            const ferie = parseFloat(document.getElementById('inpFerieUsate').value) || 0;
+            
+            document.getElementById('inpTurniMese').value = eff + ma + fs + ferie;
+        }
+
+        function calcolaRateo(item) {
+            const turniTotali = (item.turniEffettivi || 0) + (item.ma || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
+            
+            if (turniTotali >= 16) {
+                return 2.166;
+            } else if (turniTotali > 0) {
+                let res = turniTotali * 0.086;
+                return res > 2.166 ? 2.166 : res;
+            }
+            return 0;
+        }
+
+        function generaTabella() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            datiMesi.forEach((item) => {
+                const totMese = (item.turniEffettivi || 0) + (item.ma || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
+                const rateo = calcolaRateo(item);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="month-name">${item.mese}</td>
+                    <td>${item.turniEffettivi || 0}</td>
+                    <td>${item.ma || 0}</td>
+                    <td>${item.festSopp || 0}</td>
+                    <td>${item.ferieUsate || 0}</td>
+                    <td><strong>${totMese}</strong></td>
+                    <td class="rateo-val">${rateo > 0 ? rateo.toFixed(3).replace('.', ',') : '0,000'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            calcolaTotali();
+        }
+
+        function salvaMeseCurrent() {
+            const idx = parseInt(document.getElementById('selMese').value);
+            
+            datiMesi[idx].turniEffettivi = parseFloat(document.getElementById('inpTurniEff').value) || 0;
+            datiMesi[idx].ma = parseFloat(document.getElementById('inpMA').value) || 0;
+            datiMesi[idx].festSopp = parseFloat(document.getElementById('inpFS').value) || 0;
+            datiMesi[idx].ferieUsate = parseFloat(document.getElementById('inpFerieUsate').value) || 0;
+
+            generaTabella();
+
+            const msg = document.getElementById('msgOk');
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 2000);
+        }
+
+        function caricaDatiMeseForm() {
+            const idx = parseInt(document.getElementById('selMese').value);
+            document.getElementById('inpTurniEff').value = datiMesi[idx].turniEffettivi || '';
+            document.getElementById('inpMA').value = datiMesi[idx].ma || '';
+            document.getElementById('inpFS').value = datiMesi[idx].festSopp || '';
+            document.getElementById('inpFerieUsate').value = datiMesi[idx].ferieUsate || '';
+            calcolaTurniMeseAuto();
+        }
+
+        function calcolaTotali() {
+            let totTurni = 0;
+            let totFerieUsate = 0;
+            let totRateoMaturato = 0;
+
+            datiMesi.forEach(item => {
+                const totMese = (item.turniEffettivi || 0) + (item.ma || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
+                totTurni += totMese;
+                totFerieUsate += item.ferieUsate;
+                totRateoMaturato += calcolaRateo(item);
+            });
+
+            const ferieIniziali = parseFloat(document.getElementById('inpFerieIniziali').value) || 0;
+            const ferieDisponibiliReali = ferieIniziali + totRateoMaturato - totFerieUsate;
+            
+            const quotaInteraSuccessiva = Math.ceil(totRateoMaturato);
+            let rateoMancante = quotaInteraSuccessiva - totRateoMaturato;
+            if (rateoMancante === 0 && totRateoMaturato > 0) rateoMancante = 1.000;
+
+            const turniMancanti = Math.ceil(rateoMancante / 0.086);
+
+            document.getElementById('totTurniAnni').innerText = totTurni;
+            document.getElementById('dispResidueIniziali').innerText = ferieIniziali + ' gg';
+            document.getElementById('totFerieUtilizzate').innerText = totFerieUsate + ' gg';
+            document.getElementById('ferieDisponibiliTot').innerText = `${Math.floor(ferieDisponibiliReali)} gg (${ferieDisponibiliReali.toFixed(3).replace('.', ',')})`;
+            document.getElementById('totFerieMaturate').innerText = `${totRateoMaturato.toFixed(3).replace('.', ',')} (${Math.floor(totRateoMaturato)} gg)`;
+            document.getElementById('rateoMancante').innerText = rateoMancante.toFixed(3).replace('.', ',');
+            document.getElementById('turniMancanti').innerText = turniMancanti > 0 ? turniMancanti : 0;
+        }
+
+        /* --- Esportazione PDF --- */
+        function esportaPDF() {
+            window.print();
+        }
+
+        /* --- Backup & Ripristino --- */
+        function esportaDatiJSON() {
+            const dataToExport = {
+                ferieIniziali: parseFloat(document.getElementById('inpFerieIniziali').value) || 0,
+                datiMesi: datiMesi
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataToExport, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `backup_ferie_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importaDatiJSON(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData.datiMesi && Array.isArray(importedData.datiMesi)) {
+                        datiMesi = importedData.datiMesi;
+                        if (importedData.ferieIniziali !== undefined) {
+                            document.getElementById('inpFerieIniziali').value = importedData.ferieIniziali;
+                        }
+                        generaTabella();
+                        caricaDatiMeseForm();
+                        alert("Backup ripristinato con successo!");
+                    } else {
+                        alert("File JSON non valido.");
+                    }
+                } catch (err) {
+                    alert("Errore nella lettura del file JSON.");
+                }
+            };
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0]);
+            }
+        }
+
+        generaTabella();
+    </script>
+</body>
+</html>
