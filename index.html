@@ -150,11 +150,11 @@
                 <thead>
                     <tr>
                         <th style="width: 18%;">MESE</th>
+                        <th>TOTALE TURNI</th>
                         <th>TURNI EFFETTIVI</th>
+                        <th>FERIE USATE</th>
                         <th>MA</th>
                         <th>FEST SOPP</th>
-                        <th>FERIE USATE</th>
-                        <th>TOTALE TURNI</th>
                         <th style="width: 20%;">RATEO MATURATO</th>
                     </tr>
                 </thead>
@@ -282,11 +282,11 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="month-name">${item.mese}</td>
+                    <td><strong>${totMese}</strong></td>
                     <td>${item.turniEffettivi || 0}</td>
+                    <td>${item.ferieUsate || 0}</td>
                     <td>${item.ma || 0}</td>
                     <td>${item.festSopp || 0}</td>
-                    <td>${item.ferieUsate || 0}</td>
-                    <td><strong>${totMese}</strong></td>
                     <td class="rateo-val">${rateo > 0 ? rateo.toFixed(3).replace('.', ',') : '0,000'}</td>
                 `;
                 tbody.appendChild(tr);
