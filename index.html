@@ -340,17 +340,35 @@
             const ferieIniziali = parseFloat(document.getElementById('inpFerieIniziali').value) || 0;
             const ferieDisponibiliReali = ferieIniziali + totRateoMaturato - totFerieUsate;
             
-            const quotaInteraSuccessiva = Math.ceil(totRateoMaturato);
-            let rateoMancante = quotaInteraSuccessiva - totRateoMaturato;
-            if (rateoMancante === 0 && totRateoMaturato > 0) rateoMancante = 1.000;
+            // --- SOGLIA DI ARROTONDAMENTO PER MEZZO TURNO (0.043) ---
+            const TOLLERANZA_MEZZO_TURNO = 0.043;
+            
+            const quotaInteraSuccessivaRateo = Math.ceil(totRateoMaturato);
+            let rateoMancante = quotaInteraSuccessivaRateo - totRateoMaturato;
+            
+            // Se la differenza e' inferiore o uguale a mezzo turno, considera lo scatto effettuato
+            if (rateoMancante <= TOLLERANZA_MEZZO_TURNO) {
+                rateoMancante = 0;
+            }
 
             const turniMancanti = Math.ceil(rateoMancante / 0.086);
+
+            // Gestione dei valori visivi (interi) con arrotondamento di tolleranza
+            let rateoVisivo = Math.floor(totRateoMaturato);
+            if ((Math.ceil(totRateoMaturato) - totRateoMaturato) <= TOLLERANZA_MEZZO_TURNO) {
+                rateoVisivo = Math.ceil(totRateoMaturato);
+            }
+
+            let ferieDispVisive = Math.floor(ferieDisponibiliReali);
+            if ((Math.ceil(ferieDisponibiliReali) - ferieDisponibiliReali) <= TOLLERANZA_MEZZO_TURNO) {
+                ferieDispVisive = Math.ceil(ferieDisponibiliReali);
+            }
 
             document.getElementById('totTurniAnni').innerText = totTurni;
             document.getElementById('dispResidueIniziali').innerText = ferieIniziali + ' gg';
             document.getElementById('totFerieUtilizzate').innerText = totFerieUsate + ' gg';
-            document.getElementById('ferieDisponibiliTot').innerText = `${Math.floor(ferieDisponibiliReali)} gg (${ferieDisponibiliReali.toFixed(3).replace('.', ',')})`;
-            document.getElementById('totFerieMaturate').innerText = `${totRateoMaturato.toFixed(3).replace('.', ',')} (${Math.floor(totRateoMaturato)} gg)`;
+            document.getElementById('ferieDisponibiliTot').innerText = `${ferieDispVisive} gg (${ferieDisponibiliReali.toFixed(3).replace('.', ',')})`;
+            document.getElementById('totFerieMaturate').innerText = `${totRateoMaturato.toFixed(3).replace('.', ',')} (${rateoVisivo} gg)`;
             document.getElementById('rateoMancante').innerText = rateoMancante.toFixed(3).replace('.', ',');
             document.getElementById('turniMancanti').innerText = turniMancanti > 0 ? turniMancanti : 0;
         }
