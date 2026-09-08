@@ -338,7 +338,7 @@
             const ferieIniziali = parseFloat(document.getElementById('inpFerieIniziali').value) || 0;
             const ferieDisponibiliReali = ferieIniziali + totRateoMaturato - totFerieUsate;
             
-            const TOLLERANZA_MEZZO_TURNO = 0.043;
+            const TOLLERANZA_MEZZO_TURNO = 0.05;
             
             // Rateo mancante
             const quotaInteraSuccessivaRateo = Math.ceil(totRateoMaturato);
