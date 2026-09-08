@@ -29,7 +29,6 @@
         .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
         label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted); min-height: 2.4em; }
         
-        /* Font a 16px per bloccare lo zoom da smartphone */
         input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; background: #fff; height: 40px; }
         input:focus, select:focus { outline: 2px solid var(--primary); }
         input[readonly] { background-color: #f1f5f9; color: var(--text-muted); font-weight: bold; cursor: not-allowed; }
@@ -225,7 +224,6 @@
             mese: m, turniEffettivi: 0, ma: 0, festSopp: 0, ferieUsate: 0
         }));
 
-        // --- SALVATAGGIO AUTOMATICO (localStorage) ---
         function salvaInLocalStorage() {
             const dataToSave = {
                 ferieIniziali: parseFloat(document.getElementById('inpFerieIniziali').value) || 0,
@@ -340,25 +338,23 @@
             const ferieIniziali = parseFloat(document.getElementById('inpFerieIniziali').value) || 0;
             const ferieDisponibiliReali = ferieIniziali + totRateoMaturato - totFerieUsate;
             
-            // --- SOGLIA DI ARROTONDAMENTO PER MEZZO TURNO (0.043) ---
             const TOLLERANZA_MEZZO_TURNO = 0.043;
             
+            // Rateo mancante
             const quotaInteraSuccessivaRateo = Math.ceil(totRateoMaturato);
             let rateoMancante = quotaInteraSuccessivaRateo - totRateoMaturato;
-            
-            // Se la differenza e' inferiore o uguale a mezzo turno, considera lo scatto effettuato
             if (rateoMancante <= TOLLERANZA_MEZZO_TURNO) {
                 rateoMancante = 0;
             }
-
             const turniMancanti = Math.ceil(rateoMancante / 0.086);
 
-            // Gestione dei valori visivi (interi) con arrotondamento di tolleranza
+            // Rateo visivo con tolleranza
             let rateoVisivo = Math.floor(totRateoMaturato);
             if ((Math.ceil(totRateoMaturato) - totRateoMaturato) <= TOLLERANZA_MEZZO_TURNO) {
                 rateoVisivo = Math.ceil(totRateoMaturato);
             }
 
+            // Ferie disponibili visive con tolleranza aggiornata
             let ferieDispVisive = Math.floor(ferieDisponibiliReali);
             if ((Math.ceil(ferieDisponibiliReali) - ferieDisponibiliReali) <= TOLLERANZA_MEZZO_TURNO) {
                 ferieDispVisive = Math.ceil(ferieDisponibiliReali);
@@ -373,7 +369,6 @@
             document.getElementById('turniMancanti').innerText = turniMancanti > 0 ? turniMancanti : 0;
         }
 
-        /* --- PDF & Backup --- */
         function esportaPDF() { window.print(); }
 
         function esportaDatiJSON() {
@@ -426,7 +421,6 @@
             }
         }
 
-        // Inizializzazione all'avvio
         caricaDaLocalStorage();
         generaTabella();
         caricaDatiMeseForm();
