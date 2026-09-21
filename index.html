@@ -327,12 +327,20 @@
             let totTurni = 0;
             let totFerieUsate = 0;
             let totRateoMaturato = 0;
+            
+            const meseCorrente = new Date().getMonth(); // 0 = Gennaio, ecc.
+            let rateoMaturatoCorrente = 0;
 
-            datiMesi.forEach(item => {
+            datiMesi.forEach((item, index) => {
                 const totMese = (item.turniEffettivi || 0) + (item.ma || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
                 totTurni += totMese;
                 totFerieUsate += item.ferieUsate;
-                totRateoMaturato += calcolaRateo(item);
+                const rateoMese = calcolaRateo(item);
+                totRateoMaturato += rateoMese;
+
+                if (index <= meseCorrente) {
+                    rateoMaturatoCorrente += rateoMese;
+                }
             });
 
             const ferieIniziali = parseFloat(document.getElementById('inpFerieIniziali').value) || 0;
@@ -340,21 +348,20 @@
             
             const TOLLERANZA_VISIVA = 0.05;
             
-            // Rateo mancante reale: mostra esattamente quanto manca allo scatto successivo
-            const quotaInteraSuccessivaRateo = Math.ceil(totRateoMaturato);
-            let rateoMancante = quotaInteraSuccessivaRateo - totRateoMaturato;
+            const baseRateoPerProiezione = (rateoMaturatoCorrente > 0) ? rateoMaturatoCorrente : totRateoMaturato;
+            
+            const quotaInteraSuccessivaRateo = Math.ceil(baseRateoPerProiezione);
+            let rateoMancante = quotaInteraSuccessivaRateo - baseRateoPerProiezione;
             if (rateoMancante <= 0) {
-                rateoMancante = 1 - (totRateoMaturato - Math.floor(totRateoMaturato));
+                rateoMancante = 1 - (baseRateoPerProiezione - Math.floor(baseRateoPerProiezione));
             }
             const turniMancanti = Math.ceil(rateoMancante / 0.086);
 
-            // Rateo visivo con tolleranza (forza il 12 nei totali se rientra nella soglia)
             let rateoVisivo = Math.floor(totRateoMaturato);
             if ((Math.ceil(totRateoMaturato) - totRateoMaturato) <= TOLLERANZA_VISIVA) {
                 rateoVisivo = Math.ceil(totRateoMaturato);
             }
 
-            // Ferie disponibili visive con tolleranza
             let ferieDispVisive = Math.floor(ferieDisponibiliReali);
             if ((Math.ceil(ferieDisponibiliReali) - ferieDisponibiliReali) <= TOLLERANZA_VISIVA) {
                 ferieDispVisive = Math.ceil(ferieDisponibiliReali);
@@ -390,7 +397,7 @@
             fileReader.onload = function(e) {
                 try {
                     const importedData = JSON.parse(e.target.result);
-                    if (importedData.datiMesi && Array.isArray(importedData.dietMesi || importedData.datiMesi)) {
+                    if (importedData.datiMesi && Array.isArray(importedData.datiMesi)) {
                         datiMesi = importedData.datiMesi;
                         if (importedData.ferieIniziali !== undefined) {
                             document.getElementById('inpFerieIniziali').value = importedData.ferieIniziali;
@@ -412,18 +419,24 @@
         }
 
         function resetDati() {
-            if (confirm("Sei sicuro di voler cancellare tutti i dati inseriti?")) {
+            if (confirm("Sei sicuro di voler azzerare tutti i dati inseriti?")) {
                 localStorage.removeItem('gestioneFerieData');
-                document.getElementById('inpFerieIniziali').value = 0;
-                datiMesi = mesiNomi.map(m => ({ mese: m, turniEffettivi: 0, ma: 0, festSopp: 0, ferieUsate: 0 }));
-                generaTabella();
+                document.getElementById('inpFerieIniziali').value = "0";
+                datiMesi = mesiNomi.map(m => ({
+                    mese: m, turniEffettivi: 0, ma: 0, festSopp: 0, ferieUsate: 0
+                }));
+                document.getElementById('selMese').value = "0";
                 caricaDatiMeseForm();
+                generaTabella();
+                alert("Dati resettati con successo!");
             }
         }
 
-        caricaDaLocalStorage();
-        generaTabella();
-        caricaDatiMeseForm();
+        window.onload = function() {
+            caricaDaLocalStorage();
+            caricaDatiMeseForm();
+            generaTabella();
+        };
     </script>
 </body>
 </html>
