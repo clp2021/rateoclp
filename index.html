@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -55,10 +55,13 @@
         .summary-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; }
         .summary-table { width: 100%; min-width: unset; }
         .summary-table td { text-align: left; padding: 8px 12px; font-size: 0.85rem; border: none; }
-        .summary-table td:last-child { text-align: right; font-weight: 700; width: 120px; }
+        .summary-table td:last-child { text-align: right; font-weight: 700; width: 140px; }
         
+        /* Valori in evidenza leggermente più grandi ma equilibrati */
+        .highlight-mid-green { color: var(--primary-dark); font-size: 1.05rem !important; font-weight: 700 !important; }
+        .highlight-mid-warning { color: var(--warning); font-size: 1.05rem !important; font-weight: 700 !important; }
+
         .highlight-red { color: var(--danger); }
-        .highlight-green { color: var(--primary-dark); }
         .info-box { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4; }
 
         .flex-btns { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -180,7 +183,7 @@
                 </tr>
                 <tr>
                     <td><strong>Ferie disponibili tot</strong></td>
-                    <td id="ferieDisponibiliTot" class="highlight-green">0 gg</td>
+                    <td id="ferieDisponibiliTot" class="highlight-mid-green">0 gg</td>
                 </tr>
             </table>
         </div>
@@ -198,7 +201,7 @@
                 </tr>
                 <tr>
                     <td><strong>Turni mancanti</strong></td>
-                    <td id="turniMancanti" style="color: var(--warning);">0</td>
+                    <td id="turniMancanti" class="highlight-mid-warning">0</td>
                 </tr>
             </table>
         </div>
@@ -327,35 +330,29 @@
             let totTurni = 0;
             let totFerieUsate = 0;
             let totRateoMaturato = 0;
-            
-            const meseCorrente = new Date().getMonth(); // 0 = Gennaio, ecc.
-            let rateoMaturatoCorrente = 0;
 
-            datiMesi.forEach((item, index) => {
+            datiMesi.forEach((item) => {
                 const totMese = (item.turniEffettivi || 0) + (item.ma || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
                 totTurni += totMese;
                 totFerieUsate += item.ferieUsate;
                 const rateoMese = calcolaRateo(item);
                 totRateoMaturato += rateoMese;
-
-                if (index <= meseCorrente) {
-                    rateoMaturatoCorrente += rateoMese;
-                }
             });
 
             const ferieIniziali = parseFloat(document.getElementById('inpFerieIniziali').value) || 0;
             const ferieDisponibiliReali = ferieIniziali + totRateoMaturato - totFerieUsate;
             
             const TOLLERANZA_VISIVA = 0.05;
+
+            const prossimoInteroFerie = Math.ceil(ferieDisponibiliReali);
+            let ferieMancanti = prossimoInteroFerie - ferieDisponibiliReali;
             
-            const baseRateoPerProiezione = (rateoMaturatoCorrente > 0) ? rateoMaturatoCorrente : totRateoMaturato;
-            
-            const quotaInteraSuccessivaRateo = Math.ceil(baseRateoPerProiezione);
-            let rateoMancante = quotaInteraSuccessivaRateo - baseRateoPerProiezione;
-            if (rateoMancante <= 0) {
-                rateoMancante = 1 - (baseRateoPerProiezione - Math.floor(baseRateoPerProiezione));
+            if (ferieMancanti <= 0.001) {
+                ferieMancanti = 1.0;
             }
-            const turniMancanti = Math.ceil(rateoMancante / 0.086);
+            
+            let turniMancanti = Math.ceil(ferieMancanti / 0.086);
+            if (turniMancanti < 0) turniMancanti = 0;
 
             let rateoVisivo = Math.floor(totRateoMaturato);
             if ((Math.ceil(totRateoMaturato) - totRateoMaturato) <= TOLLERANZA_VISIVA) {
@@ -372,7 +369,7 @@
             document.getElementById('totFerieUtilizzate').innerText = totFerieUsate + ' gg';
             document.getElementById('ferieDisponibiliTot').innerText = `${ferieDispVisive} gg (${ferieDisponibiliReali.toFixed(3).replace('.', ',')})`;
             document.getElementById('totFerieMaturate').innerText = `${totRateoMaturato.toFixed(3).replace('.', ',')} (${rateoVisivo} gg)`;
-            document.getElementById('rateoMancante').innerText = rateoMancante.toFixed(3).replace('.', ',');
+            document.getElementById('rateoMancante').innerText = ferieMancanti.toFixed(3).replace('.', ',');
             document.getElementById('turniMancanti').innerText = turniMancanti > 0 ? turniMancanti : 0;
         }
 
