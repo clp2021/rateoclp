@@ -26,7 +26,7 @@
         .card { background: var(--card-bg); border-radius: 8px; padding: 15px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .card h2 { font-size: 1.1rem; margin-bottom: 12px; }
         
-        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 10px; }
         label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted); min-height: 2.4em; }
         
         input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; background: #fff; height: 40px; }
@@ -45,7 +45,7 @@
         .feedback-msg { display: none; margin-top: 10px; padding: 8px; background-color: #d1fae5; color: #065f46; border-radius: 6px; text-align: center; font-size: 0.85rem; font-weight: bold; }
 
         .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: center; min-width: 500px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: center; min-width: 550px; }
         th, td { border: 1px solid var(--border); padding: 8px 6px; }
         th { background-color: #f1f5f9; font-weight: 700; color: var(--text-main); font-size: 0.75rem; text-transform: uppercase; }
         td.month-name { text-align: left; font-weight: 600; padding-left: 10px; text-transform: capitalize; background-color: #fafafa; }
@@ -57,7 +57,6 @@
         .summary-table td { text-align: left; padding: 8px 12px; font-size: 0.85rem; border: none; }
         .summary-table td:last-child { text-align: right; font-weight: 700; width: 140px; }
         
-        /* Valori in evidenza leggermente più grandi ma equilibrati */
         .highlight-mid-green { color: var(--primary-dark); font-size: 1.05rem !important; font-weight: 700 !important; }
         .highlight-mid-warning { color: var(--warning); font-size: 1.05rem !important; font-weight: 700 !important; }
 
@@ -121,6 +120,10 @@
                 <input type="number" id="inpMA" placeholder="0" oninput="calcolaTurniMeseAuto()">
             </div>
             <div>
+                <label for="inpINF">Infortunio (INF):</label>
+                <input type="number" id="inpINF" placeholder="0" oninput="calcolaTurniMeseAuto()">
+            </div>
+            <div>
                 <label for="inpFS">Fest. Soppresse:</label>
                 <input type="number" id="inpFS" placeholder="0" oninput="calcolaTurniMeseAuto()">
             </div>
@@ -144,20 +147,21 @@
             <button class="btn btn-secondary no-print" style="width: auto; padding: 6px 12px; margin: 0;" onclick="esportaPDF()">📄 Esporta PDF</button>
         </div>
         <div class="info-box no-print">
-            Totale Turni = Turni Effettivi + Malattia + Fest. Soppresse + Ferie Usate.<br>
+            Totale Turni = Turni Effettivi + Malattia + Infortunio + Fest. Soppresse + Ferie Usate.<br>
             Soglia: 16+ turni totali = 2,166 gg | Sotto i 16 turni = 0,086 gg per turno.
         </div>
         <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 18%;">MESE</th>
+                        <th style="width: 16%;">MESE</th>
                         <th>TOTALE TURNI</th>
                         <th>TURNI EFFETTIVI</th>
                         <th>FERIE USATE</th>
                         <th>MA</th>
+                        <th>INF</th>
                         <th>FEST SOPP</th>
-                        <th style="width: 20%;">RATEO MATURATO</th>
+                        <th style="width: 18%;">RATEO MATURATO</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
@@ -224,7 +228,7 @@
         ];
 
         let datiMesi = mesiNomi.map(m => ({
-            mese: m, turniEffettivi: 0, ma: 0, festSopp: 0, ferieUsate: 0
+            mese: m, turniEffettivi: 0, ma: 0, inf: 0, festSopp: 0, ferieUsate: 0
         }));
 
         function salvaInLocalStorage() {
@@ -241,7 +245,14 @@
                 try {
                     const parsed = JSON.parse(savedData);
                     if (parsed.datiMesi && Array.isArray(parsed.datiMesi)) {
-                        datiMesi = parsed.datiMesi;
+                        datiMesi = parsed.datiMesi.map(m => ({
+                            mese: m.mese,
+                            turniEffettivi: m.turniEffettivi || 0,
+                            ma: m.ma || 0,
+                            inf: m.inf || 0,
+                            festSopp: m.festSopp || 0,
+                            ferieUsate: m.ferieUsate || 0
+                        }));
                     }
                     if (parsed.ferieIniziali !== undefined) {
                         document.getElementById('inpFerieIniziali').value = parsed.ferieIniziali;
@@ -255,14 +266,15 @@
         function calcolaTurniMeseAuto() {
             const eff = parseFloat(document.getElementById('inpTurniEff').value) || 0;
             const ma = parseFloat(document.getElementById('inpMA').value) || 0;
+            const inf = parseFloat(document.getElementById('inpINF').value) || 0;
             const fs = parseFloat(document.getElementById('inpFS').value) || 0;
             const ferie = parseFloat(document.getElementById('inpFerieUsate').value) || 0;
             
-            document.getElementById('inpTurniMese').value = eff + ma + fs + ferie;
+            document.getElementById('inpTurniMese').value = eff + ma + inf + fs + ferie;
         }
 
         function calcolaRateo(item) {
-            const turniTotali = (item.turniEffettivi || 0) + (item.ma || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
+            const turniTotali = (item.turniEffettivi || 0) + (item.ma || 0) + (item.inf || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
             
             if (turniTotali >= 16) {
                 return 2.166;
@@ -278,7 +290,7 @@
             tbody.innerHTML = '';
 
             datiMesi.forEach((item) => {
-                const totMese = (item.turniEffettivi || 0) + (item.ma || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
+                const totMese = (item.turniEffettivi || 0) + (item.ma || 0) + (item.inf || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
                 const rateo = calcolaRateo(item);
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -287,6 +299,7 @@
                     <td>${item.turniEffettivi || 0}</td>
                     <td>${item.ferieUsate || 0}</td>
                     <td>${item.ma || 0}</td>
+                    <td>${item.inf || 0}</td>
                     <td>${item.festSopp || 0}</td>
                     <td class="rateo-val">${rateo > 0 ? rateo.toFixed(3).replace('.', ',') : '0,000'}</td>
                 `;
@@ -301,6 +314,7 @@
             
             datiMesi[idx].turniEffettivi = parseFloat(document.getElementById('inpTurniEff').value) || 0;
             datiMesi[idx].ma = parseFloat(document.getElementById('inpMA').value) || 0;
+            datiMesi[idx].inf = parseFloat(document.getElementById('inpINF').value) || 0;
             datiMesi[idx].festSopp = parseFloat(document.getElementById('inpFS').value) || 0;
             datiMesi[idx].ferieUsate = parseFloat(document.getElementById('inpFerieUsate').value) || 0;
 
@@ -316,6 +330,7 @@
             const idx = parseInt(document.getElementById('selMese').value);
             document.getElementById('inpTurniEff').value = datiMesi[idx].turniEffettivi || '';
             document.getElementById('inpMA').value = datiMesi[idx].ma || '';
+            document.getElementById('inpINF').value = datiMesi[idx].inf || '';
             document.getElementById('inpFS').value = datiMesi[idx].festSopp || '';
             document.getElementById('inpFerieUsate').value = datiMesi[idx].ferieUsate || '';
             calcolaTurniMeseAuto();
@@ -332,7 +347,7 @@
             let totRateoMaturato = 0;
 
             datiMesi.forEach((item) => {
-                const totMese = (item.turniEffettivi || 0) + (item.ma || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
+                const totMese = (item.turniEffettivi || 0) + (item.ma || 0) + (item.inf || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
                 totTurni += totMese;
                 totFerieUsate += item.ferieUsate;
                 const rateoMese = calcolaRateo(item);
@@ -395,7 +410,14 @@
                 try {
                     const importedData = JSON.parse(e.target.result);
                     if (importedData.datiMesi && Array.isArray(importedData.datiMesi)) {
-                        datiMesi = importedData.datiMesi;
+                        datiMesi = importedData.datiMesi.map(m => ({
+                            mese: m.mese,
+                            turniEffettivi: m.turniEffettivi || 0,
+                            ma: m.ma || 0,
+                            inf: m.inf || 0,
+                            festSopp: m.festSopp || 0,
+                            ferieUsate: m.ferieUsate || 0
+                        }));
                         if (importedData.ferieIniziali !== undefined) {
                             document.getElementById('inpFerieIniziali').value = importedData.ferieIniziali;
                         }
@@ -420,7 +442,7 @@
                 localStorage.removeItem('gestioneFerieData');
                 document.getElementById('inpFerieIniziali').value = "0";
                 datiMesi = mesiNomi.map(m => ({
-                    mese: m, turniEffettivi: 0, ma: 0, festSopp: 0, ferieUsate: 0
+                    mese: m, turniEffettivi: 0, ma: 0, inf: 0, festSopp: 0, ferieUsate: 0
                 }));
                 document.getElementById('selMese').value = "0";
                 caricaDatiMeseForm();
