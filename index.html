@@ -45,14 +45,14 @@
         .feedback-msg { display: none; margin-top: 10px; padding: 8px; background-color: #d1fae5; color: #065f46; border-radius: 6px; text-align: center; font-size: 0.85rem; font-weight: bold; }
 
         .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: center; min-width: 550px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: center; min-width: 600px; }
         th, td { border: 1px solid var(--border); padding: 8px 6px; }
         th { background-color: #f1f5f9; font-weight: 700; color: var(--text-main); font-size: 0.75rem; text-transform: uppercase; }
         td.month-name { text-align: left; font-weight: 600; padding-left: 10px; text-transform: capitalize; background-color: #fafafa; }
         
         .rateo-val { font-weight: 700; background-color: #f8fafc; color: var(--text-main); }
 
-        .summary-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; }
+        .summary-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; margin-top: 15px; }
         .summary-table { width: 100%; min-width: unset; }
         .summary-table td { text-align: left; padding: 8px 12px; font-size: 0.85rem; border: none; }
         .summary-table td:last-child { text-align: right; font-weight: 700; width: 140px; }
@@ -81,12 +81,31 @@
         <h1>RATEO FERIE & TURNI</h1>
     </header>
 
+    <!-- CARD SELEZIONE ANNO -->
+    <div class="card no-print">
+        <h2>📅 Gestione Anno di Lavoro</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px;">
+                <button class="btn btn-outline" style="width: 45px; margin-top: 0; height: 40px;" onclick="cambiaAnno(-1)">◀</button>
+                <select id="selAnno" onchange="selezionaAnnoCorrente()" style="flex: 1; height: 40px; font-weight: bold; font-size: 1rem; text-align-last: center;"></select>
+                <button class="btn btn-outline" style="width: 45px; margin-top: 0; height: 40px;" onclick="cambiaAnno(1)">▶</button>
+            </div>
+            <div style="min-width: 160px; flex: 0 0 auto;">
+                <button class="btn btn-secondary" style="margin-top: 0; height: 40px; width: 100%;" onclick="aggiungiNuovoAnno()">+ Nuovo Anno</button>
+            </div>
+        </div>
+    </div>
+
     <div class="card no-print" style="border-left: 4px solid var(--primary);">
-        <h2>⚙️ 1. Configurazione Ferie Iniziali</h2>
+        <h2>⚙️ 1. Configurazione Iniziale (<span id="txtAnnoConfig">Anno</span>)</h2>
         <div class="form-row">
             <div>
-                <label for="inpFerieIniziali">Ferie Residue Iniziali (Anno Precedente):</label>
+                <label for="inpFerieIniziali">Ferie Residue Iniziali:</label>
                 <input type="number" id="inpFerieIniziali" placeholder="es. 10" step="0.5" value="0" oninput="salvaECalcola()">
+            </div>
+            <div>
+                <label for="inpFSMaturateTot">FS Totali Caricate dall'Azienda:</label>
+                <input type="number" id="inpFSMaturateTot" placeholder="es. 1, 2..." step="0.5" value="0" oninput="salvaECalcola()">
             </div>
         </div>
     </div>
@@ -94,7 +113,7 @@
     <div class="card no-print">
         <h2>➕ 2. Registra / Aggiorna Mese</h2>
         <div class="form-row">
-            <div>
+            <div style="grid-column: 1 / -1;">
                 <label for="selMese">Seleziona Mese:</label>
                 <select id="selMese" onchange="caricaDatiMeseForm()">
                     <option value="0">Gennaio</option>
@@ -124,7 +143,7 @@
                 <input type="number" id="inpINF" placeholder="0" oninput="calcolaTurniMeseAuto()">
             </div>
             <div>
-                <label for="inpFS">Fest. Soppresse:</label>
+                <label for="inpFS">Fest. Soppresse (Usate):</label>
                 <input type="number" id="inpFS" placeholder="0" oninput="calcolaTurniMeseAuto()">
             </div>
             <div>
@@ -132,6 +151,10 @@
                 <input type="number" id="inpFerieUsate" placeholder="0" oninput="calcolaTurniMeseAuto()">
             </div>
             <div>
+                <label for="inpPNR">Permesso Non Retribuito (PNR):</label>
+                <input type="number" id="inpPNR" placeholder="0">
+            </div>
+            <div style="grid-column: 1 / -1;">
                 <label for="inpTurniMese">Totale Turni Mese:</label>
                 <input type="number" id="inpTurniMese" placeholder="0" readonly>
             </div>
@@ -143,25 +166,27 @@
 
     <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h2>📋 Riepilogo Mese per Mese</h2>
+            <h2>📋 Riepilogo Mese per Mese (<span id="txtAnnoTabella">Anno</span>)</h2>
             <button class="btn btn-secondary no-print" style="width: auto; padding: 6px 12px; margin: 0;" onclick="esportaPDF()">📄 Esporta PDF</button>
         </div>
         <div class="info-box no-print">
-            Totale Turni = Turni Effettivi + Malattia + Infortunio + Fest. Soppresse + Ferie Usate.<br>
-            Soglia: 16+ turni totali = 2,166 gg | Sotto i 16 turni = 0,086 gg per turno.
+            Totale Turni = Turni Effettivi + Malattia + Infortunio + Fest. Soppresse (Usate) + Ferie Usate.<br>
+            Soglia: 16+ turni totali = 2,166 gg | Sotto i 16 turni = 0,086 gg per turno.<br>
+            <em>* PNR (Permesso Non Retribuito) è solo un dato indicativo.</em>
         </div>
         <div class="table-responsive">
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 16%;">MESE</th>
+                        <th style="width: 14%;">MESE</th>
                         <th>TOTALE TURNI</th>
                         <th>TURNI EFFETTIVI</th>
                         <th>FERIE USATE</th>
                         <th>MA</th>
                         <th>INF</th>
-                        <th>FEST SOPP</th>
-                        <th style="width: 18%;">RATEO MATURATO</th>
+                        <th>FEST SOPP (USATE)</th>
+                        <th>PNR</th>
+                        <th style="width: 16%;">RATEO MATURATO</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
@@ -193,7 +218,25 @@
         </div>
 
         <div class="card">
-            <h2>🎯 Proiezione Rateo</h2>
+            <h2>🗓️ Festività Soppresse (FS)</h2>
+            <table class="summary-table">
+                <tr>
+                    <td>FS Caricate (Azienda)</td>
+                    <td id="totFSMaturateAnno">0 gg</td>
+                </tr>
+                <tr>
+                    <td>FS Utilizzate (Anno)</td>
+                    <td id="totFSUtilizzate" class="highlight-red">0 gg</td>
+                </tr>
+                <tr>
+                    <td><strong>FS Disponibili Totali</strong></td>
+                    <td id="fsDisponibiliTot" class="highlight-mid-green">0 gg</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>🎯 Proiezione Rateo Ferie</h2>
             <table class="summary-table">
                 <tr>
                     <td>Ferie Maturate (Reali / Visive)</td>
@@ -216,7 +259,7 @@
         <div class="flex-btns">
             <button class="btn btn-outline" type="button" onclick="esportaDatiJSON()">📥 Salva Backup (JSON)</button>
             <button class="btn btn-outline" type="button" onclick="document.getElementById('fileImport').click()">📤 Carica Backup (JSON)</button>
-            <button class="btn btn-danger" type="button" onclick="resetDati()">🗑️ Reset Dati</button>
+            <button class="btn btn-danger" type="button" onclick="resetDatiCorrenti()">🗑️ Reset Anno Corrente</button>
             <input type="file" id="fileImport" accept=".json" style="display: none;" onchange="importaDatiJSON(event)">
         </div>
     </div>
@@ -227,40 +270,152 @@
             "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"
         ];
 
-        let datiMesi = mesiNomi.map(m => ({
-            mese: m, turniEffettivi: 0, ma: 0, inf: 0, festSopp: 0, ferieUsate: 0
-        }));
+        let databaseAnni = {};
+        let annoSelezionato = new Date().getFullYear();
+
+        function getStrutturaAnnoVuota() {
+            return {
+                ferieIniziali: 0,
+                fsMaturateTot: 0,
+                datiMesi: mesiNomi.map(m => ({
+                    mese: m, turniEffettivi: 0, ma: 0, inf: 0, festSopp: 0, ferieUsate: 0, pnr: 0
+                }))
+            };
+        }
 
         function salvaInLocalStorage() {
             const dataToSave = {
-                ferieIniziali: parseFloat(document.getElementById('inpFerieIniziali').value) || 0,
-                datiMesi: datiMesi
+                annoCorrente: annoSelezionato,
+                databaseAnni: databaseAnni
             };
-            localStorage.setItem('gestioneFerieData', JSON.stringify(dataToSave));
+            localStorage.setItem('gestioneFerieMultiAnno', JSON.stringify(dataToSave));
         }
 
         function caricaDaLocalStorage() {
-            const savedData = localStorage.getItem('gestioneFerieData');
+            const savedData = localStorage.getItem('gestioneFerieMultiAnno');
             if (savedData) {
                 try {
                     const parsed = JSON.parse(savedData);
-                    if (parsed.datiMesi && Array.isArray(parsed.datiMesi)) {
-                        datiMesi = parsed.datiMesi.map(m => ({
-                            mese: m.mese,
-                            turniEffettivi: m.turniEffettivi || 0,
-                            ma: m.ma || 0,
-                            inf: m.inf || 0,
-                            festSopp: m.festSopp || 0,
-                            ferieUsate: m.ferieUsate || 0
-                        }));
+                    if (parsed.databaseAnni) {
+                        databaseAnni = parsed.databaseAnni;
                     }
-                    if (parsed.ferieIniziali !== undefined) {
-                        document.getElementById('inpFerieIniziali').value = parsed.ferieIniziali;
+                    if (parsed.annoCorrente) {
+                        annoSelezionato = parseInt(parsed.annoCorrente);
                     }
                 } catch (e) {
-                    console.error("Errore nel caricamento dei dati salvati", e);
+                    console.error("Errore nel caricamento dei dati", e);
+                }
+            } else {
+                const vecchioDato = localStorage.getItem('gestioneFerieData');
+                if (vecchioDato) {
+                    try {
+                        const parsedOld = JSON.parse(vecchioDato);
+                        databaseAnni[annoSelezionato] = {
+                            ferieIniziali: parsedOld.ferieIniziali || 0,
+                            fsMaturateTot: parsedOld.fsMaturateTot || 0,
+                            datiMesi: parsedOld.datiMesi || getStrutturaAnnoVuota().datiMesi
+                        };
+                    } catch (e) {}
                 }
             }
+
+            if (!databaseAnni[annoSelezionato]) {
+                databaseAnni[annoSelezionato] = getStrutturaAnnoVuota();
+                const annoPrec = annoSelezionato - 1;
+                if (databaseAnni[annoPrec]) {
+                    databaseAnni[annoSelezionato].ferieIniziali = calcolaFerieFinaliAnno(annoPrec);
+                }
+            }
+
+            aggiornaSelectAnni();
+        }
+
+        function calcolaFerieFinaliAnno(anno) {
+            const dati = databaseAnni[anno];
+            if (!dati) return 0;
+            let totRateo = 0;
+            let totFerieUsate = 0;
+            dati.datiMesi.forEach(item => {
+                totFerieUsate += item.ferieUsate;
+                totRateo += calcolaRateoPerItem(item);
+            });
+            return Math.max(0, parseFloat((dati.ferieIniziali + totRateo - totFerieUsate).toFixed(3)));
+        }
+
+        function calcolaRateoPerItem(item) {
+            const turniTotali = (item.turniEffettivi || 0) + (item.ma || 0) + (item.inf || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
+            if (turniTotali >= 16) {
+                return 2.166;
+            } else if (turniTotali > 0) {
+                let res = turniTotali * 0.086;
+                return res > 2.166 ? 2.166 : res;
+            }
+            return 0;
+        }
+
+        function aggiornaSelectAnni() {
+            const sel = document.getElementById('selAnno');
+            sel.innerHTML = '';
+            const anniOrdinati = Object.keys(databaseAnni).map(Number).sort((a, b) => a - b);
+            
+            if (anniOrdinati.length === 0) {
+                anniOrdinati.push(annoSelezionato);
+                databaseAnni[annoSelezionato] = getStrutturaAnnoVuota();
+            }
+
+            anniOrdinati.forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a;
+                opt.innerText = a;
+                if (a === annoSelezionato) opt.selected = true;
+                sel.appendChild(opt);
+            });
+
+            document.getElementById('txtAnnoConfig').innerText = annoSelezionato;
+            document.getElementById('txtAnnoTabella').innerText = annoSelezionato;
+            caricaDatiAnnoCorrente();
+        }
+
+        function selezionaAnnoCorrente() {
+            annoSelezionato = parseInt(document.getElementById('selAnno').value);
+            if (!databaseAnni[annoSelezionato]) {
+                databaseAnni[annoSelezionato] = getStrutturaAnnoVuota();
+            }
+            document.getElementById('txtAnnoConfig').innerText = annoSelezionato;
+            document.getElementById('txtAnnoTabella').innerText = annoSelezionato;
+            caricaDatiAnnoCorrente();
+            salvaInLocalStorage();
+        }
+
+        function cambiaAnno(delta) {
+            annoSelezionato += delta;
+            if (!databaseAnni[annoSelezionato]) {
+                databaseAnni[annoSelezionato] = getStrutturaAnnoVuota();
+                const annoPrec = annoSelezionato - 1;
+                if (databaseAnni[annoPrec]) {
+                    databaseAnni[annoSelezionato].ferieIniziali = calcolaFerieFinaliAnno(annoPrec);
+                }
+            }
+            aggiornaSelectAnni();
+            salvaInLocalStorage();
+        }
+
+        function aggiungiNuovoAnno() {
+            const anni = Object.keys(databaseAnni).map(Number);
+            const nuovoAnno = Math.max(...anni) + 1;
+            databaseAnni[nuovoAnno] = getStrutturaAnnoVuota();
+            databaseAnni[nuovoAnno].ferieIniziali = calcolaFerieFinaliAnno(nuovoAnno - 1);
+            annoSelezionato = nuovoAnno;
+            aggiornaSelectAnni();
+            salvaInLocalStorage();
+        }
+
+        function caricaDatiAnnoCorrente() {
+            const dati = databaseAnni[annoSelezionato];
+            document.getElementById('inpFerieIniziali').value = dati.ferieIniziali;
+            document.getElementById('inpFSMaturateTot').value = dati.fsMaturateTot;
+            caricaDatiMeseForm();
+            generaTabella();
         }
 
         function calcolaTurniMeseAuto() {
@@ -273,25 +428,14 @@
             document.getElementById('inpTurniMese').value = eff + ma + inf + fs + ferie;
         }
 
-        function calcolaRateo(item) {
-            const turniTotali = (item.turniEffettivi || 0) + (item.ma || 0) + (item.inf || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
-            
-            if (turniTotali >= 16) {
-                return 2.166;
-            } else if (turniTotali > 0) {
-                let res = turniTotali * 0.086;
-                return res > 2.166 ? 2.166 : res;
-            }
-            return 0;
-        }
-
         function generaTabella() {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
+            const datiMesi = databaseAnni[annoSelezionato].datiMesi;
 
             datiMesi.forEach((item) => {
                 const totMese = (item.turniEffettivi || 0) + (item.ma || 0) + (item.inf || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
-                const rateo = calcolaRateo(item);
+                const rateo = calcolaRateoPerItem(item);
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="month-name">${item.mese}</td>
@@ -301,6 +445,7 @@
                     <td>${item.ma || 0}</td>
                     <td>${item.inf || 0}</td>
                     <td>${item.festSopp || 0}</td>
+                    <td>${item.pnr || 0}</td>
                     <td class="rateo-val">${rateo > 0 ? rateo.toFixed(3).replace('.', ',') : '0,000'}</td>
                 `;
                 tbody.appendChild(tr);
@@ -311,12 +456,14 @@
 
         function salvaMeseCurrent() {
             const idx = parseInt(document.getElementById('selMese').value);
+            const datiMesi = databaseAnni[annoSelezionato].datiMesi;
             
             datiMesi[idx].turniEffettivi = parseFloat(document.getElementById('inpTurniEff').value) || 0;
             datiMesi[idx].ma = parseFloat(document.getElementById('inpMA').value) || 0;
             datiMesi[idx].inf = parseFloat(document.getElementById('inpINF').value) || 0;
             datiMesi[idx].festSopp = parseFloat(document.getElementById('inpFS').value) || 0;
             datiMesi[idx].ferieUsate = parseFloat(document.getElementById('inpFerieUsate').value) || 0;
+            datiMesi[idx].pnr = parseFloat(document.getElementById('inpPNR').value) || 0;
 
             generaTabella();
             salvaInLocalStorage();
@@ -328,43 +475,45 @@
 
         function caricaDatiMeseForm() {
             const idx = parseInt(document.getElementById('selMese').value);
-            document.getElementById('inpTurniEff').value = datiMesi[idx].turniEffettivi || '';
-            document.getElementById('inpMA').value = datiMesi[idx].ma || '';
-            document.getElementById('inpINF').value = datiMesi[idx].inf || '';
-            document.getElementById('inpFS').value = datiMesi[idx].festSopp || '';
-            document.getElementById('inpFerieUsate').value = datiMesi[idx].ferieUsate || '';
+            const item = databaseAnni[annoSelezionato].datiMesi[idx];
+            document.getElementById('inpTurniEff').value = item.turniEffettivi || '';
+            document.getElementById('inpMA').value = item.ma || '';
+            document.getElementById('inpINF').value = item.inf || '';
+            document.getElementById('inpFS').value = item.festSopp || '';
+            document.getElementById('inpFerieUsate').value = item.ferieUsate || '';
+            document.getElementById('inpPNR').value = item.pnr || '';
             calcolaTurniMeseAuto();
         }
 
         function salvaECalcola() {
+            databaseAnni[annoSelezionato].ferieIniziali = parseFloat(document.getElementById('inpFerieIniziali').value) || 0;
+            databaseAnni[annoSelezionato].fsMaturateTot = parseFloat(document.getElementById('inpFSMaturateTot').value) || 0;
             calcolaTotali();
             salvaInLocalStorage();
         }
 
         function calcolaTotali() {
+            const dati = databaseAnni[annoSelezionato];
             let totTurni = 0;
             let totFerieUsate = 0;
+            let totFSUtilizzate = 0;
             let totRateoMaturato = 0;
 
-            datiMesi.forEach((item) => {
+            dati.datiMesi.forEach((item) => {
                 const totMese = (item.turniEffettivi || 0) + (item.ma || 0) + (item.inf || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
                 totTurni += totMese;
                 totFerieUsate += item.ferieUsate;
-                const rateoMese = calcolaRateo(item);
-                totRateoMaturato += rateoMese;
+                totFSUtilizzate += item.festSopp;
+                totRateoMaturato += calcolaRateoPerItem(item);
             });
 
-            const ferieIniziali = parseFloat(document.getElementById('inpFerieIniziali').value) || 0;
+            const ferieIniziali = dati.ferieIniziali;
             const ferieDisponibiliReali = ferieIniziali + totRateoMaturato - totFerieUsate;
             
             const TOLLERANZA_VISIVA = 0.05;
-
             const prossimoInteroFerie = Math.ceil(ferieDisponibiliReali);
             let ferieMancanti = prossimoInteroFerie - ferieDisponibiliReali;
-            
-            if (ferieMancanti <= 0.001) {
-                ferieMancanti = 1.0;
-            }
+            if (ferieMancanti <= 0.001) ferieMancanti = 1.0;
             
             let turniMancanti = Math.ceil(ferieMancanti / 0.086);
             if (turniMancanti < 0) turniMancanti = 0;
@@ -379,10 +528,18 @@
                 ferieDispVisive = Math.ceil(ferieDisponibiliReali);
             }
 
+            const fsMaturateTot = dati.fsMaturateTot;
+            const fsDisponibiliTotali = fsMaturateTot - totFSUtilizzate;
+
             document.getElementById('totTurniAnni').innerText = totTurni;
             document.getElementById('dispResidueIniziali').innerText = ferieIniziali + ' gg';
             document.getElementById('totFerieUtilizzate').innerText = totFerieUsate + ' gg';
             document.getElementById('ferieDisponibiliTot').innerText = `${ferieDispVisive} gg (${ferieDisponibiliReali.toFixed(3).replace('.', ',')})`;
+            
+            document.getElementById('totFSMaturateAnno').innerText = fsMaturateTot + ' gg';
+            document.getElementById('totFSUtilizzate').innerText = totFSUtilizzate + ' gg';
+            document.getElementById('fsDisponibiliTot').innerText = fsDisponibiliTotali + ' gg';
+
             document.getElementById('totFerieMaturate').innerText = `${totRateoMaturato.toFixed(3).replace('.', ',')} (${rateoVisivo} gg)`;
             document.getElementById('rateoMancante').innerText = ferieMancanti.toFixed(3).replace('.', ',');
             document.getElementById('turniMancanti').innerText = turniMancanti > 0 ? turniMancanti : 0;
@@ -392,13 +549,13 @@
 
         function esportaDatiJSON() {
             const dataToExport = {
-                ferieIniziali: parseFloat(document.getElementById('inpFerieIniziali').value) || 0,
-                datiMesi: datiMesi
+                annoCorrente: annoSelezionato,
+                databaseAnni: databaseAnni
             };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataToExport, null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `backup_ferie_${new Date().toISOString().slice(0,10)}.json`);
+            downloadAnchor.setAttribute("download", `backup_ferie_multianno_${new Date().toISOString().slice(0,10)}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
@@ -409,22 +566,12 @@
             fileReader.onload = function(e) {
                 try {
                     const importedData = JSON.parse(e.target.result);
-                    if (importedData.datiMesi && Array.isArray(importedData.datiMesi)) {
-                        datiMesi = importedData.datiMesi.map(m => ({
-                            mese: m.mese,
-                            turniEffettivi: m.turniEffettivi || 0,
-                            ma: m.ma || 0,
-                            inf: m.inf || 0,
-                            festSopp: m.festSopp || 0,
-                            ferieUsate: m.ferieUsate || 0
-                        }));
-                        if (importedData.ferieIniziali !== undefined) {
-                            document.getElementById('inpFerieIniziali').value = importedData.ferieIniziali;
-                        }
-                        generaTabella();
-                        caricaDatiMeseForm();
+                    if (importedData.databaseAnni) {
+                        databaseAnni = importedData.databaseAnni;
+                        if (importedData.annoCorrente) annoSelezionato = importedData.annoCorrente;
+                        aggiornaSelectAnni();
                         salvaInLocalStorage();
-                        alert("Backup ripristinato con successo!");
+                        alert("Backup multi-anno ripristinato con successo!");
                     } else {
                         alert("File JSON non valido.");
                     }
@@ -437,24 +584,17 @@
             }
         }
 
-        function resetDati() {
-            if (confirm("Sei sicuro di voler azzerare tutti i dati inseriti?")) {
-                localStorage.removeItem('gestioneFerieData');
-                document.getElementById('inpFerieIniziali').value = "0";
-                datiMesi = mesiNomi.map(m => ({
-                    mese: m, turniEffettivi: 0, ma: 0, inf: 0, festSopp: 0, ferieUsate: 0
-                }));
-                document.getElementById('selMese').value = "0";
-                caricaDatiMeseForm();
-                generaTabella();
-                alert("Dati resettati con successo!");
+        function resetDatiCorrenti() {
+            if (confirm(`Sei sicuro di voler azzerare tutti i dati dell'anno ${annoSelezionato}?`)) {
+                databaseAnni[annoSelezionato] = getStrutturaAnnoVuota();
+                caricaDatiAnnoCorrente();
+                salvaInLocalStorage();
+                alert(`Dati dell'anno ${annoSelezionato} resettati con successo!`);
             }
         }
 
         window.onload = function() {
             caricaDaLocalStorage();
-            caricaDatiMeseForm();
-            generaTabella();
         };
     </script>
 </body>
