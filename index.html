@@ -172,7 +172,7 @@
         <div class="info-box no-print">
             Totale Turni = Turni Effettivi + Malattia + Infortunio + Fest. Soppresse (Usate) + Ferie Usate.<br>
             Soglia: 16+ turni totali = 2,166 gg | Sotto i 16 turni = 0,086 gg per turno.<br>
-            <em>* PNR (Permesso Non Retribuito) è solo un dato indicativo.</em>
+            <em>* PNR (Permesso Non Retribuito) è solo un dato indicativo. I mesi futuri scalano le ferie/FS dal saldo ma non incidono sulle proiezioni di rateo attuali.</em>
         </div>
         <div class="table-responsive">
             <table>
@@ -283,6 +283,17 @@
             };
         }
 
+        // Funzione per determinare se un mese è futuro rispetto ad oggi
+        function isMeseFuturo(anno, meseIndex) {
+            const oggi = new Date();
+            const annoCorrente = oggi.getFullYear();
+            const meseCorrente = oggi.getMonth(); // 0 = Gennaio, ..., 9 = Ottobre
+            
+            if (anno > annoCorrente) return true;
+            if (anno < annoCorrente) return false;
+            return meseIndex > meseCorrente;
+        }
+
         function salvaInLocalStorage() {
             const dataToSave = {
                 annoCorrente: annoSelezionato,
@@ -335,14 +346,18 @@
             if (!dati) return 0;
             let totRateo = 0;
             let totFerieUsate = 0;
-            dati.datiMesi.forEach(item => {
+            dati.datiMesi.forEach((item, index) => {
                 totFerieUsate += item.ferieUsate;
-                totRateo += calcolaRateoPerItem(item);
+                totRateo += calcolaRateoPerItem(item, anno, index);
             });
             return Math.max(0, parseFloat((dati.ferieIniziali + totRateo - totFerieUsate).toFixed(3)));
         }
 
-        function calcolaRateoPerItem(item) {
+        function calcolaRateoPerItem(item, anno, meseIndex) {
+            // I mesi futuri non generano rateo per le proiezioni attuali
+            if (isMeseFuturo(anno, meseIndex)) {
+                return 0;
+            }
             const turniTotali = (item.turniEffettivi || 0) + (item.ma || 0) + (item.inf || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
             if (turniTotali >= 16) {
                 return 2.166;
@@ -433,9 +448,9 @@
             tbody.innerHTML = '';
             const datiMesi = databaseAnni[annoSelezionato].datiMesi;
 
-            datiMesi.forEach((item) => {
+            datiMesi.forEach((item, index) => {
                 const totMese = (item.turniEffettivi || 0) + (item.ma || 0) + (item.inf || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
-                const rateo = calcolaRateoPerItem(item);
+                const rateo = calcolaRateoPerItem(item, annoSelezionato, index);
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="month-name">${item.mese}</td>
@@ -499,12 +514,12 @@
             let totFSUtilizzate = 0;
             let totRateoMaturato = 0;
 
-            dati.datiMesi.forEach((item) => {
+            dati.datiMesi.forEach((item, index) => {
                 const totMese = (item.turniEffettivi || 0) + (item.ma || 0) + (item.inf || 0) + (item.festSopp || 0) + (item.ferieUsate || 0);
                 totTurni += totMese;
-                totFerieUsate += item.ferieUsate;
-                totFSUtilizzate += item.festSopp;
-                totRateoMaturato += calcolaRateoPerItem(item);
+                totFerieUsate += item.ferieUsate;   // Somma TUTTE le ferie (inclusi mesi futuri) per scalare dal saldo
+                totFSUtilizzate += item.festSopp;   // Somma TUTTE le FS usate (inclusi mesi futuri) per scalare dal saldo FS
+                totRateoMaturato += calcolaRateoPerItem(item, annoSelezionato, index); // Esclude rateo dei mesi futuri
             });
 
             const ferieIniziali = dati.ferieIniziali;
